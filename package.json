@@ -10,7 +10,8 @@
   "dependencies": {
     "core-js": "^3.6.5",
     "vue": "^2.6.11",
-    "vue-property-decorator": "^9.0.0"
+    "vue-property-decorator": "^9.0.0",
+    "yarn": "^1.22.5"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",

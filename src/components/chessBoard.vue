@@ -36,6 +36,7 @@
     <div class="main-content">
       <div
           class="board"
+          :class="(!playerOne && swapOnMove) ? 'board-flipped' : ''"
           :style="style"
       >
         <div
@@ -118,6 +119,14 @@
             v-model="showPossibleMoves"
         >
       </label>
+      <label for="swapOnMove">
+        Swap Board To Players Side
+        <input
+            id="swapOnMove"
+            type="checkbox"
+            v-model="swapOnMove"
+        >
+      </label>
     </div>
   </div>
 </template>
@@ -192,6 +201,7 @@ export default {
         [false, false, false, false, false, false, false, false]
       ],
       focused: [-1, -1],
+      swapOnMove: false,
 
       boardHistory: [],
       gotMovedHistory: [],
@@ -230,7 +240,7 @@ export default {
         [false, false, false, false, false, false, false, false]
       ],
 
-      opacity: 1,
+      opacity: 10,
       style: `opacity: ${this.opacity * 3}%;`,
       showPossibleMoves: false,
     }
@@ -588,19 +598,6 @@ export default {
 
     deselectAllHighlighted() {
       this.highlightedTiles = [
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false],
-        [false, false, false, false, false, false, false, false]
-      ];
-    },
-
-    resetMoveable() {
-      this.movableWhite = [
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
@@ -1249,9 +1246,15 @@ export default {
 }
 
 .board {
-  opacity: 3%;
+  opacity: 1;
   border: solid 10px black;
   width: 800px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.board-flipped {
+  flex-direction: row-reverse;
 }
 
 .board > * {
