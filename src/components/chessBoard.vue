@@ -34,6 +34,34 @@
       </div>
     </div>
     <div class="main-content">
+      <div class="whiteFiguresTaken">
+        <span class="whiteFiguresTaken-title">{{ valueCapturedWhite }}</span>
+        <span
+            v-for="(figure, i) in whiteFiguresTaken"
+            :key="i"
+        >
+          <img
+              :src="getImageUrl(figure)"
+              height="30"
+              width="30"
+              :alt="figure"
+          >
+        </span>
+      </div>
+      <div class="blackFiguresTaken">
+        <span class="blackFiguresTaken-title">{{ valueCapturedBlack }}</span>
+        <span
+            v-for="(figure, i) in blackFiguresTaken"
+            :key="i"
+        >
+          <img
+              :src="getImageUrl(figure)"
+              height="30"
+              width="30"
+              :alt="figure"
+          >
+        </span>
+      </div>
       <div
           class="board"
           :class="(!playerOne && swapOnMove) ? 'board-flipped' : ''"
@@ -48,7 +76,7 @@
               :key="(i + 1) * 8 + j + 1"
               @click="handleClick(i, j)"
               class="tile"
-              :id="`tile-${((i + 1) * 7 + j) % 2 === 0}`"
+              :id="`tile-${(i * 8 + j)}`"
               :class="(((i + 1) * 7 + j) % 2 === 0) ? 'tile--white' : 'tile--black'"
               tabindex="1"
               @keydown.up="handleKey('up')"
@@ -62,11 +90,11 @@
                 class="focusedTile"
             />
             <span
-                v-if="(highlightedTiles[i][j]) && board[i][j] === '  ' && !pawnMovedOver[i][j]"
+                v-if="(highlightedTiles[i][j]) && board[i][j] === '  ' && !(pawnMovedOver[i][j] && (board[selected[0]][selected[1]] === 'pawn' || board[selected[0]][selected[1]] === 'pawn'))"
                 class="highlightedTile tile-overlay"
             />
             <span
-                v-if="highlightedTiles[i][j] && (board[i][j] !== '  ' || pawnMovedOver[i][j])"
+                v-if="highlightedTiles[i][j] && (board[i][j] !== '  ' || (pawnMovedOver[i][j] && (board[selected[0]][selected[1]] === 'pawn' || board[selected[0]][selected[1]] === 'pawn')))"
                 class="captureAble tile-overlay"
             />
             <span
@@ -128,10 +156,13 @@
         >
       </label>
     </div>
+
   </div>
+
 </template>
 
 <script>
+
 export default {
   data: function () {
     return {
@@ -207,6 +238,8 @@ export default {
       gotMovedHistory: [],
       isCheckedHistory: [],
       pawnMovedOverHistory: [],
+      whiteFiguresTakenHistory: [],
+      blackFiguresTakenHistory: [],
 
       simulatedIsChecked: [false, false],
       simulatedBoard: [
@@ -219,7 +252,7 @@ export default {
         ["pawn", "pawn", "pawn", "pawn", "pawn", "pawn", "pawn", "pawn"],
         ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"]
       ],
-      simulatedMoveableWhite: [
+      simulatedMovableWhite: [
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
@@ -229,7 +262,7 @@ export default {
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false]
       ],
-      simulatedMoveableBlack: [
+      simulatedMovableBlack: [
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
@@ -240,9 +273,14 @@ export default {
         [false, false, false, false, false, false, false, false]
       ],
 
+      valueCapturedWhite: 0,
+      valueCapturedBlack: 0,
+
       opacity: 10,
       style: `opacity: ${this.opacity * 3}%;`,
       showPossibleMoves: false,
+      whiteFiguresTaken: [],
+      blackFiguresTaken: [],
     }
   },
   methods: {
@@ -288,9 +326,13 @@ export default {
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false]
       ];
+      this.whiteFiguresTaken = [];
+      this.blackFiguresTaken = [];
       this.moves = [];
       this.boardHistory = [];
       this.isCheckedHistory = [];
+      this.whiteFiguresTakenHistory = [];
+      this.blackFiguresTakenHistory = [];
       this.selected = [-1, -1];
       this.playerOne = true;
       this.gameEnd = false;
@@ -320,19 +362,28 @@ export default {
     handleKey(str) {
       switch (str) {
         case "up":
-          if(this.focused[0] !== 0) this.focused[0]--;
+          if (this.focused[0] !== 0) {
+            this.focused[0]--;
+          }
           break;
         case "right":
-          if(this.focused[1] !== 7) this.focused[1]++;
+          if (this.focused[1] !== 7) {
+            this.focused[1]++;
+          }
           break;
         case "left":
-          if(this.focused[1] !== 0) this.focused[1]--;
+          if (this.focused[1] !== 0) {
+            this.focused[1]--;
+          }
           break;
         case "down":
-          if(this.focused[0] !== 7) this.focused[0]++;
+          if (this.focused[0] !== 7) {
+            this.focused[0]++;
+          }
           break;
       }
-      this.document.focus(this.document.getElementById(`tile-${(this.focused[0] + 1) * 7 + this.focused[1]}`));
+      this.document.focus(
+          this.document.getElementById(`tile-${(this.focused[0] + 1) * 7 + this.focused[1]}`));
     },
 
     handleClick(i, j) {
@@ -393,7 +444,7 @@ export default {
     },
 
     setAllSimulatedPossibleMoves() {
-      this.simulatedMoveableBlack = [
+      this.simulatedMovableBlack = [
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
@@ -403,7 +454,7 @@ export default {
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false]
       ];
-      this.simulatedMoveableWhite = [
+      this.simulatedMovableWhite = [
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
         [false, false, false, false, false, false, false, false],
@@ -421,13 +472,13 @@ export default {
             if (this.isUpperCase(figure)) {
               for (let n = 0; n < moves.length; n++) {
                 if (!this.isUpperCase(this.simulatedBoard[moves[n][0]][moves[n][1]])) {
-                  this.simulatedMoveableBlack[moves[n][0]][moves[n][1]] = true;
+                  this.simulatedMovableBlack[moves[n][0]][moves[n][1]] = true;
                 }
               }
             } else {
               for (let n = 0; n < moves.length; n++) {
                 if (!this.isLowerCase(this.simulatedBoard[moves[n][0]][moves[n][1]])) {
-                  this.simulatedMoveableWhite[moves[n][0]][moves[n][1]] = true;
+                  this.simulatedMovableWhite[moves[n][0]][moves[n][1]] = true;
                 }
               }
             }
@@ -490,12 +541,28 @@ export default {
       this.gotMovedHistory.push(this.copyBoard(this.gotMoved));
       this.isCheckedHistory.push(this.copyBoard(this.isChecked));
       this.pawnMovedOverHistory.push(this.copyBoard(this.pawnMovedOver));
+      this.whiteFiguresTakenHistory.push(this.copyBoard(this.whiteFiguresTaken));
+      this.blackFiguresTakenHistory.push(this.copyBoard(this.blackFiguresTaken));
     },
 
     move(i, j) {
       this.addBoardToHistory();
       let oldI = this.selected[0];
       let oldJ = this.selected[1];
+      if (this.board[i][j] !== "  ") {
+        if (this.playerOne) {
+          this.blackFiguresTaken.push(this.board[i][j])
+        } else {
+          this.whiteFiguresTaken.push(this.board[i][j])
+        }
+      }
+      if (this.pawnMovedOver[i][j] && this.board[oldI][oldJ].toLowerCase() === "pawn") {
+        if (this.playerOne) {
+          this.blackFiguresTaken.push("PAWN")
+        } else {
+          this.whiteFiguresTaken.push("pawn")
+        }
+      }
       if (this.board[oldI][oldJ].toLowerCase() === "pawn") {
         if (this.pawnMovedOver[i][j]) {
           this.board[oldI][j] = "  ";
@@ -556,6 +623,43 @@ export default {
 
       this.playerOne = !this.playerOne;
       this.gotMoved[oldI][oldJ] = true;
+      this.calculateValueOfTakenFigures();
+    },
+
+    calculateValueOfTakenFigures() {
+      this.valueCapturedWhite = this.calcWhiteFiguresValue();
+      this.valueCapturedBlack = this.calcBlackFiguresValue();
+      this.whiteFiguresTaken = this.sort(this.whiteFiguresTaken);
+      this.blackFiguresTaken = this.sort(this.blackFiguresTaken);
+    },
+
+    sort(arr) {
+      let result = [];
+      for (let i = 0; i < arr.length; i++) {
+        let j;
+        for (j = 0; j < i; j++) {
+          if (this.getValue(arr[i]) <= this.getValue(arr[j])) {
+            break;
+          }
+        }
+        result.splice(j, 0, arr[i]);
+      }
+      return result;
+    },
+
+    calcWhiteFiguresValue() {
+      let value = 0;
+      for (let i = 0; i < this.whiteFiguresTaken.length; i++) {
+        value += this.getValue(this.whiteFiguresTaken[i]);
+      }
+      return value;
+    },
+    calcBlackFiguresValue() {
+      let value = 0;
+      for (let i = 0; i < this.blackFiguresTaken.length; i++) {
+        value += this.getValue(this.blackFiguresTaken[i]);
+      }
+      return value;
     },
 
     isCheckMate() {
@@ -673,14 +777,14 @@ export default {
       for (let i = 0; i < this.simulatedBoard.length; i++) {
         for (let j = 0; j < this.simulatedBoard[i].length; j++) {
           if (this.simulatedBoard[i][j] === "king") {
-            this.simulatedIsChecked[0] = this.simulatedMoveableBlack[i][j];
+            this.simulatedIsChecked[0] = this.simulatedMovableBlack[i][j];
           }
         }
       }
       for (let i = 0; i < this.simulatedBoard.length; i++) {
         for (let j = 0; j < this.simulatedBoard[i].length; j++) {
           if (this.simulatedBoard[i][j] === "KING") {
-            this.simulatedIsChecked[1] = this.simulatedMoveableWhite[i][j];
+            this.simulatedIsChecked[1] = this.simulatedMovableWhite[i][j];
           }
         }
       }
@@ -1072,11 +1176,36 @@ export default {
       this.simulatedBoard[oldI][oldJ] = "  ";
       this.setIsSimulatedChecked();
     },
+
+    getValue(figure) {
+      switch (figure.toLowerCase()) {
+        case "pawn":
+          return 1
+        case "rook":
+          return 5
+        case "knight":
+          return 3
+        case "bishop":
+          return 3
+        case "queen":
+          return 8
+        case "king":
+          return Number.MAX_VALUE
+      }
+    }
   }
 }
 </script>
 
 <style>
+
+.settings-container {
+  padding: 15px;
+  display: grid;
+  grid-auto-rows: min-content;
+  grid-gap: 15px;
+}
+
 .moves--title > * {
   width: 100%;
   height: 100%;
@@ -1140,6 +1269,32 @@ export default {
   display: grid;
   grid-template: auto / 1fr 820px 1fr;
   grid-gap: 30px;
+}
+
+.whiteFiguresTaken-title {
+  font-size: 25px;
+  color: chartreuse;
+  text-align: center;
+}
+
+.blackFiguresTaken-title {
+  font-size: 25px;
+  color: chartreuse;
+  text-align: center;
+}
+
+.whiteFiguresTaken {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  bottom: 100%;
+}
+
+.blackFiguresTaken {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 100%;
 }
 
 .main-content {
@@ -1246,7 +1401,7 @@ export default {
 }
 
 .board {
-  opacity: 1;
+  opacity: .03;
   border: solid 10px black;
   width: 800px;
   display: flex;
